@@ -102,7 +102,7 @@ summary(rf_model)
 plot(rf_model$finalModel)
 ```
 
-We can see that the accuracy is much better compared to the simple decision tree algorithm.
+We can see that the accuracy is much better compared to the simple decision tree algorithm, and has around 90% accuracy.
 
 # Results
 
