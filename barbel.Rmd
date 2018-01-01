@@ -1,0 +1,109 @@
+---
+title: "Predicting barbel lift efficiency with random forest"
+author: "Aurel Prosz"
+date: '2018 január 1 '
+output: html_document
+---
+
+# Summary
+
+The goal in this exercise is to predict from data obtained from wearable devices if a barbel lift was performed right, or the participant did something wrong during the exercise. The efficiency of the barbel lift was ordered into 5 classes, where class *A* was the best. In the future using these prediction algorithms one can measure during a gym session if he or she performed the training in the right way without outside help.  
+
+I performed some basic data exploration with the data, and then trained the data set with a simple decision tree and then a more complex random forest algorithm and compared the two.
+
+# The analysis
+
+Loading the dependencies:
+
+
+```{r, message= FALSE, warning= FALSE}
+require(caret)
+require(dplyr)
+require(reshape2)
+require(ggplot2)
+require(ggfortify)
+require(e1071)
+require(rattle)
+```
+
+Let's load the data set:
+
+```{r}
+train <- read.table("pml-training.csv", sep = ",", header = TRUE)
+test <- read.table("pml-testing.csv", sep = ",", header = TRUE)
+```
+
+The next step is to filter for the meaningful columns:
+
+```{r}
+train.f1 <- train[, c(8, 9, 10, 38, 39, 40, 41, 42, 43, 44, 
+                     45, 46, 47, 48, 60, 61, 62, 63, 64, 65, 66, 67 ,68, 84, 85, 86)]
+train.f2 <- train[, -c(1:86)]
+train.f2 <- train.f2[, c(27,28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 65, 66, 67, 68, 69, 70, 71, 72 ,73, 74)]
+
+train.f <- cbind(train.f1, train.f2)
+
+train.f <- train.f[complete.cases(train.f),]
+
+
+test.f1 <- test[, c(8, 9, 10, 38, 39, 40, 41, 42, 43, 44, 
+                      45, 46, 47, 48, 60, 61, 62, 63, 64, 65, 66, 67 ,68, 84, 85, 86)]
+test.f2 <- test[, -c(1:86)]
+test.f2 <- test.f2[, c(27,28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 65, 66, 67, 68, 69, 70, 71, 72 ,73, 74)]
+
+test.f <- cbind(test.f1, test.f2)
+
+test.f <- test.f[complete.cases(test.f),]
+```
+
+The machine learning techniques used in this analysis are very computational heavy, so I partitioned the train data to a smaller data set, which consist only the 10% of the original data set:
+
+```{r}
+part <- createDataPartition(y=train.f$classe,p=0.1,list=FALSE)
+
+training<-train.f[part,]
+```
+
+## Plotting the data
+
+In the following part I am going to plot two columns from the train data to get a sense of the structure of the data used for the statistical learning.
+
+```{r}
+p <- ggplot(training, aes(accel_belt_z, accel_forearm_y)) + geom_point(aes(colour = factor(classe)), size = 1)
+p
+```
+
+We can see in this plot how the different classes are separated from each other examining the two variable.
+
+## Decision tree
+
+In this part I am going to perform an analysis using simple decision trees.
+
+```{r}
+f_model <- train(classe~.,data=training,method="rpart",  
+                 trControl=trainControl(method="cv",number=5))
+fancyRpartPlot(f_model$finalModel)
+f_model
+```
+
+According to the results the accuracy could be much better. 
+
+
+## Random forest
+
+In this part I am going to perform an analysis using a more complex method, the random forest.
+```{r}
+rf_model<-train(classe~.,data=training,method="rf",  
+                trControl=trainControl(method="cv",number=5),
+                prox=TRUE,allowParallel=TRUE)
+
+rf_model
+summary(rf_model)
+plot(rf_model$finalModel)
+```
+
+We can see that the accuracy is much better compared to the simple decision tree algorithm.
+
+# Results
+
+I performed two machine learning methods to classify the exercises into five different categories. The random forest method performed the best in this analysis.
